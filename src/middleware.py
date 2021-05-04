@@ -12,6 +12,7 @@ class MiddlewareType(Enum):
     CONSUMER = 1
     PRODUCER = 2
 
+
 class Queue:
     """Representation of Queue interface for both Consumers and Producers."""
 
@@ -30,6 +31,9 @@ class Queue:
     def pull(self) -> (str, tuple):
         data= self.broker.get_topic(self.topic)
         #de onde vem o tuple
+
+
+    def pull(self) -> (str, tuple):
         """Receives (topic, data) from broker.
 
         Should BLOCK the consumer!"""
