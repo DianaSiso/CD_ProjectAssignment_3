@@ -3,6 +3,7 @@ from typing import Dict, List, Any, Tuple
 import socket
 import enum
 from .protocol import CDProto
+import selectors
 
 class Serializer(enum.Enum):
     """Possible message serializers."""
@@ -22,10 +23,9 @@ class Broker:
         self._port = 5000
         self.topics={}
         self.subs={}
-        LOGGER.info("Listen @ %s:%s", self._host, self._port)
         self.sel=selectors.DefaultSelector()
         self.sock = socket.socket()     
-        self.sock.bind(('localhost', _port))
+        self.sock.bind(('localhost', self._port))
         self.sock.listen(100)
         self.sel.register(self.sock, selectors.EVENT_READ, self.accept) #the socket is ready to read
 
@@ -36,22 +36,21 @@ class Broker:
         return self.topics.keys()
 
     def get_topic(self, topic):
-        if topic in self.topics:
         """Returns the currently stored value in topic."""
+        if topic in self.topics:
             return self.topics[topic]
         else:
-            return null
+            return None
 
     def put_topic(self, topic, value):
         """Store in topic the value."""
-        
         self.topics[topic]=value        
 
     def list_subscriptions(self, topic: str) -> List[socket.socket]:
         """Provide list of subscribers to a given topic."""
         res=[]
         for elem in self.subs[topic]:
-            res.append(elem[0])
+            res.append(elem)
         return res
 
     def subscribe(self, topic: str, address: socket.socket, _format: Serializer = None):
@@ -91,16 +90,21 @@ class Broker:
             data = CDProto.recv_msg(conn)  #the server reads the message sent through the socket
             comm=data['command']
             if comm=="register":
-                self.subscribe(data['topic'], self.sock)
+                self.subscribe(data['topic'], conn)
             elif comm=="cancel":
-                self.unsubscribe(data['topic'], self.sock)
+                self.unsubscribe(data['topic'], conn)
             elif comm=="lists":
                 self.list_topics()
             elif comm=="push":  #é sempre um produtor que vai usar este comando
-                res = list_subscriptions(data['topic'])
+                res = self.list_subscriptions(data['topic'])
+                self.put_topic(data['topic'], data['value'])
                 for element in res:
-                    self.protocol.send_msg(element, data['value'])
+                    msg = CDProto.reppush(data['value'])
+                    CDProto.send_msg(element, msg)
+
             elif comm=="pull":
+                msg= CDProto.reppull(self.get_topic(data['topic']))
+                CDProto.send_msg(conn, msg)
 
 
           

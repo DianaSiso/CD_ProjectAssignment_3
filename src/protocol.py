@@ -2,7 +2,7 @@
 import json
 import time
 from socket import socket
-
+import pickle
 
 class Message:
     """Message Type."""
@@ -21,6 +21,7 @@ class RegisterMessage(Message):
         return pickle.dumps({'command':self.command, 'topic':self.topic,'serializer':2})
 
 class CancelMessage(Message):
+    """Message to register username in the server."""
     def __init__(self,topic,command="cancel"):
         super().__init__(command)
         self.topic=topic
@@ -30,7 +31,8 @@ class CancelMessage(Message):
         return pickle.dumps({'command':self.command, 'topic':self.topic})
 
 class ListMessage(Message):
-    def __init__(self,command="lists"):
+    """Message to register username in the server."""
+    def __init__(self,command="list"):
         super().__init__(command)
     def __str__json(self):
         return json.dumps({'command':self.command})
@@ -38,6 +40,7 @@ class ListMessage(Message):
         return pickle.dumps({'command':self.command})
 
 class PushMessage(Message):
+    """Message to register username in the server."""
     def __init__(self,topic,value,command="push"):
         super().__init__(command)
         self.topic=topic
@@ -48,6 +51,7 @@ class PushMessage(Message):
         return pickle.dumps({'command':self.command,'topic':self.topic,'value':self.value})
 
 class PullMessage(Message):
+    """Message to register username in the server."""
     def __init__(self,topic,command="pull"):
         super().__init__(command)
         self.topic=topic
@@ -56,13 +60,23 @@ class PullMessage(Message):
     def __str__pickle(self):
         return pickle.dumps({'command':self.command,'topic':self.topic})
 
-class RepPull(Message):
+class RepPullMessage(Message):
+    """Message to register username in the server."""
     def __init__(self,value,command="reppull"):
         super().__init__(command)
         self.value=value
     def __str__(self):
         return self.value
     
+class RepPushMessage(Message):
+    """Message to register username in the server."""
+    def __init__(self,value,command="reppull"):
+        super().__init__(command)
+        self.value=value
+    def __str__(self):
+        return self.value
+    
+
 class CDProto:
     """Computação Distribuida Protocol."""
 
@@ -95,32 +109,37 @@ class CDProto:
         """Creates a RegisterMessage object."""
         return RepPullMessage(value)   
     
-   
+    def reppush(cls, value: str) -> RepPushMessage:
+        """Creates a RegisterMessage object."""
+        return RepPushMessage(value)   
+    
     @classmethod
-    def send_msg(cls, connection: socket, msg: Message ):
+    def send_msg(cls, connection: socket, msg: Message ,serializer:int):
         """Sends through a connection a Message object."""
         data=msg.encode(encoding='UTF-8') #dar encode para bytes
+        ser=serializer.to_bytes(2,byteorder='big')
         mess=len(data).to_bytes(2,byteorder='big') #tamanho da mensagem em bytes
+        mess+=ser
         mess+=data #mensagem final contendo o cabeçalho e a mensagem
         connection.sendall(mess) #enviar mensagem final
-        
-        
 
     @classmethod
-    def recv_msg(cls, connection: socket, serial: str) -> Message:
+    def recv_msg(cls, connection: socket) -> Message:
         """Receives through a connection a Message object."""
         header=connection.recv(2) #recevemos os 2 primeiros bits
         head=int.from_bytes(header,byteorder='big') #contem o tamanho da mensagem 
         if head!=0:
+            ser=connection.recv(2)
+            serializer=int.from_bytes(ser,byteorder='big') # vemos o serializer da mensagem
             message=connection.recv(head) #recebemos os bits correspondente á mensagem
             datat=message.decode(encoding='UTF-8')#descodificamos a mensagem 
-            if(serial=="json"):
+            if(serializer==1):
                 data=json.loads(datat) # vira json
-            else if(serial=="pickle"):
+                
+            elif (serializer==2):
                 data=pickle.loads(datat) # vira pickle
-            if data.get('command'=='reppull')
-                return cls.reppull(data.get('value'))
             return data
+            
         else:
             return None
         
