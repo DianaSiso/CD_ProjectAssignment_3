@@ -80,40 +80,30 @@ class Broker:
         pass
         
 
-     def accept(self,sock, mask):
+    def accept(self,sock, mask):
         conn, addr = self.sock.accept()  # Should be ready
         print('accepted', conn, 'from', addr)
         conn.setblocking(False)
         self.sel.register(conn, selectors.EVENT_READ, self.read)
 
-      def read(self,conn, mask):
+    
+    def read(self,conn, mask):
             data = CDProto.recv_msg(conn)  #the server reads the message sent through the socket
-            comm=data.get('command')
-            if comm=="message": #if the commands are different from register and join               
-                chan=data2.get('channel')
-                print(chan)
-                if chan:
-                   for item in self.clients.get(chan):
-                        print('echoing', repr(data), 'to', item)
-                        CDProto.send_msg(item,data)
-                
-                else:
-                    for item in self.clients.get("Default"):
-                        print('echoing', repr(data), 'to', item)
-                        CDProto.send_msg(item,data)
-                    
-            elif comm=="join":
-                chan=data2.get('channel')#guardar isto num dic ou algo do genero
-                if chan in self.clients :
-                    self.clients[chan].append(conn)
-                else:
-                    self.clients[chan]=[conn]
-                print(conn, 'joined', chan)
-                logging.debug(self.clients)
-            else:
-                print(conn,'registered')
-                self.clients["Default"].append(conn)
-                logging.debug(self.clients)
+            comm=data['command']
+            if comm=="register":
+                self.subscribe(data['topic'], self.sock)
+            elif comm=="cancel":
+                self.unsubscribe(data['topic'], self.sock)
+            elif comm=="lists":
+                self.list_topics()
+            elif comm=="push":  #é sempre um produtor que vai usar este comando
+                res = list_subscriptions(data['topic'])
+                for element in res:
+                    self.protocol.send_msg(element, data['value'])
+            elif comm=="pull":
+
+
+          
     
         #else:
         #    print('closing', conn)
