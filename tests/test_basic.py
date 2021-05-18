@@ -2,15 +2,17 @@
 import json
 import pickle
 import random
+import string
 import threading
 import time
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.broker import Broker
 from src.clients import Consumer, Producer
-from src.middleware import JSONQueue, PickleQueue
+from src.middleware import JSONQueue, PickleQueue, XMLQueue
+
+TOPIC = "".join(random.sample(string.ascii_lowercase, 6))
 
 
 def gen():
@@ -18,19 +20,9 @@ def gen():
         yield random.randint(0, 100)
 
 
-@pytest.fixture(scope="session", autouse=True)
-def broker():
-    broker = Broker()
-
-    thread = threading.Thread(target=broker.run, daemon=True)
-    thread.start()
-    time.sleep(1)
-    return broker
-
-
 @pytest.fixture
 def consumer_JSON():
-    consumer = Consumer("/temp", JSONQueue)
+    consumer = Consumer(TOPIC, JSONQueue)
 
     thread = threading.Thread(target=consumer.run, daemon=True)
     thread.start()
@@ -39,7 +31,16 @@ def consumer_JSON():
 
 @pytest.fixture
 def consumer_Pickle():
-    consumer = Consumer("/temp", PickleQueue)
+    consumer = Consumer(TOPIC, PickleQueue)
+
+    thread = threading.Thread(target=consumer.run, daemon=True)
+    thread.start()
+    return consumer
+
+
+@pytest.fixture
+def consumer_XML():
+    consumer = Consumer(TOPIC, XMLQueue)
 
     thread = threading.Thread(target=consumer.run, daemon=True)
     thread.start()
@@ -49,15 +50,15 @@ def consumer_Pickle():
 @pytest.fixture
 def producer_JSON():
 
-    producer = Producer("/temp", gen, PickleQueue)
+    producer = Producer(TOPIC, gen, PickleQueue)
 
     producer.run(1)
     return producer
 
 
-def test_simple_producer_consumer(consumer_JSON):
+def test_simple_producer_consumer(consumer_JSON, broker):
 
-    producer = Producer("/temp", gen, JSONQueue)
+    producer = Producer(TOPIC, gen, JSONQueue)
 
     with patch("json.dumps", MagicMock(side_effect=json.dumps)) as json_dump:
         with patch("pickle.dumps", MagicMock(side_effect=pickle.dumps)) as pickle_dump:
@@ -70,23 +71,30 @@ def test_simple_producer_consumer(consumer_JSON):
 
     assert consumer_JSON.received == producer.produced
 
+    assert broker.list_topics() == [TOPIC]
 
-def test_multiple_consumers(consumer_JSON, consumer_Pickle):
+
+def test_multiple_consumers(consumer_JSON, consumer_Pickle, consumer_XML, broker):
 
     prev = list(consumer_JSON.received)  # consumer gets previously stored element
 
-    producer = Producer("/temp", gen, PickleQueue)
+    producer = Producer(TOPIC, gen, PickleQueue)
 
     producer.run(9)  # iterate only 9 times, consumer iterates 9 + 1 historic
     time.sleep(0.1)  # wait for messages to propagate through the broker to the clients
 
     assert consumer_JSON.received == prev + producer.produced
     assert consumer_Pickle.received == consumer_JSON.received
+    assert consumer_Pickle.received == [
+        int(v) for v in consumer_XML.received
+    ]  # XML only transfers strings, so we cast here into int for comparison
+
+    assert broker.list_topics() == [TOPIC]
 
 
 def test_broker(producer_JSON, broker):
     time.sleep(0.1)  # wait for messages to propagate through the broker to the clients
 
-    assert broker.list_topics() == ["/temp"]
+    assert broker.list_topics() == [TOPIC]
 
-    assert broker.get_topic("/temp") == producer_JSON.produced[-1]
+    assert broker.get_topic(TOPIC) == producer_JSON.produced[-1]

@@ -5,7 +5,7 @@ from queue import LifoQueue, Empty
 from .broker import Broker
 import socket
 from .protocol import CDProto
-
+from typing import Any
 
 
 class MiddlewareType(Enum):
@@ -42,8 +42,8 @@ class Queue:
 
 
 
-    def pull(self) -> (str, str):
-        """Receives (topic, data) from broker.
+    def pull(self) -> (str, Any):
+        """Waits for (topic, data) from broker.
 
         Should BLOCK the consumer!"""
         if(self.queue_type==1):
@@ -81,7 +81,7 @@ class Queue:
 class JSONQueue(Queue):
     """Queue implementation with JSON based serialization."""
     self.queue_type=1
-    if(Queue._type=MiddlewareType.CONSUMER) :
+    if(Queue._type==MiddlewareType.CONSUMER) :
         mesreg=protocol.register(self.topic).__str__json()
         CDProto.send_msg(self.sock,mesreg,1)
     
@@ -91,7 +91,7 @@ class JSONQueue(Queue):
 class XMLQueue(Queue):
     """Queue implementation with XML based serialization."""
     self.queue_type=0
-    if(Queue._type=MiddlewareType.CONSUMER) :
+    if(Queue._type==MiddlewareType.CONSUMER) :
             
 
 class PickleQueue(Queue):
