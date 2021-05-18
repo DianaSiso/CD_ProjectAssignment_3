@@ -65,16 +65,21 @@ class RepPullMessage(Message):
     def __init__(self,value,command="reppull"):
         super().__init__(command)
         self.value=value
-    def __str__(self):
-        return self.value
+        
+    def __str__json(self):
+        return json.dumps({'command':self.command,'value':self.value})
+    def __str__pickle(self):
+        return pickle.dumps({'command':self.command,'value':self.value})
     
 class RepPushMessage(Message):
     """Message to register username in the server."""
     def __init__(self,value,command="reppull"):
         super().__init__(command)
         self.value=value
-    def __str__(self):
-        return self.value
+    def __str__json(self):
+        return json.dumps({'command':self.command,'value':self.value})
+    def __str__pickle(self):
+        return pickle.dumps({'command':self.command,'value':self.value})
     
 
 class CDProto:

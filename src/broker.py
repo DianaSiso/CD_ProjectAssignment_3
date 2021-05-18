@@ -48,10 +48,7 @@ class Broker:
 
     def list_subscriptions(self, topic: str) -> List[socket.socket]:
         """Provide list of subscribers to a given topic."""
-        res=[]
-        for elem in self.subs[topic]:
-            res.append(elem)
-        return res
+        return self.subs[topic]
 
     def subscribe(self, topic: str, address: socket.socket, _format: Serializer = None):
         """Subscribe to topic by client in address."""
@@ -89,6 +86,7 @@ class Broker:
     def read(self,conn, mask):
             data = CDProto.recv_msg(conn)  #the server reads the message sent through the socket
             comm=data['command']
+        
             if comm=="register":
                 self.subscribe(data['topic'], conn)
             elif comm=="cancel":
@@ -99,12 +97,16 @@ class Broker:
                 res = self.list_subscriptions(data['topic'])
                 self.put_topic(data['topic'], data['value'])
                 for element in res:
-                    msg = CDProto.reppush(data['value'])
-                    CDProto.send_msg(element, msg)
+                    if element[1] == "1":
+                        msg = CDProto.reppush(data['value']).__str__json()
+                    elif element[1] == "2":
+                        msg = CDProto.reppush(data['value']).__str__pickle()
+                   
+                    CDProto.send_msg(element[0], msg, element[1])
 
             elif comm=="pull":
                 msg= CDProto.reppull(self.get_topic(data['topic']))
-                CDProto.send_msg(conn, msg)
+                CDProto.send_msg(conn, msg, data['serializer'])
 
 
           
