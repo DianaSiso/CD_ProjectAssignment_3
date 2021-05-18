@@ -22,6 +22,11 @@ class Broker:
         self.topics={}
         self.subs={}
         LOGGER.info("Listen @ %s:%s", self._host, self._port)
+        self.sel=selectors.DefaultSelector()
+        self.sock = socket.socket()     
+        self.sock.bind(('localhost', _port))
+        self.sock.listen(100)
+        self.sel.register(self.sock, selectors.EVENT_READ, self.accept) #the socket is ready to read
 
 
 
@@ -30,13 +35,16 @@ class Broker:
         return self.topics.keys()
 
     def get_topic(self, topic):
+        if topic in self.topics:
         """Returns the currently stored value in topic."""
-        return self.topics[topic]
+            return self.topics[topic]
+        else:
+            return null
 
     def put_topic(self, topic, value):
         """Store in topic the value."""
-        self.topics[topic]=[value]
         
+        self.topics[topic]=value        
 
     def list_subscriptions(self, topic: str) -> List[socket.socket]:
         """Provide list of subscribers to a given topic."""
@@ -61,6 +69,17 @@ class Broker:
 
     def run(self):
         """Run until canceled."""
-
+        
         while not self.canceled:
-            pass
+            events = self.sel.select()
+            for key, mask in events:
+                callback = key.data
+                callback(key.fileobj, mask)
+        pass
+        
+
+    def accept(self,sock, mask):
+        conn, addr = self.sock.accept()  # Should be ready
+        print('accepted', conn, 'from', addr)
+        conn.setblocking(False)
+        self.sel.register(conn, selectors.EVENT_READ, self.read)
