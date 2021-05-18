@@ -61,6 +61,7 @@ class Broker:
         else:
             self.subs[topic]=[(address,_format)]
             
+            
     def unsubscribe(self, topic, address):
         """Unsubscribe to topic by client in address."""
         for elem in self.subs[topic]:
@@ -86,25 +87,21 @@ class Broker:
         self.sel.register(conn, selectors.EVENT_READ, self.read)
 
       def read(self,conn, mask):
-        data = CDProto.recv_msg(conn)  #the server reads the message sent through the socket
-        if data:
-            data=data.__str__()
-            logging.debug('received "%s"',data)
-            data2=json.loads(data) # turn the msg from Message to json
-            comm=data2.get('command')
+            data = CDProto.recv_msg(conn)  #the server reads the message sent through the socket
+            comm=data.get('command')
             if comm=="message": #if the commands are different from register and join               
                 chan=data2.get('channel')
                 print(chan)
                 if chan:
-                    for item in self.clients.get(chan):
+                   for item in self.clients.get(chan):
                         print('echoing', repr(data), 'to', item)
                         CDProto.send_msg(item,data)
-                    
+                
                 else:
                     for item in self.clients.get("Default"):
                         print('echoing', repr(data), 'to', item)
                         CDProto.send_msg(item,data)
-                
+                    
             elif comm=="join":
                 chan=data2.get('channel')#guardar isto num dic ou algo do genero
                 if chan in self.clients :
@@ -113,11 +110,11 @@ class Broker:
                     self.clients[chan]=[conn]
                 print(conn, 'joined', chan)
                 logging.debug(self.clients)
-
             else:
                 print(conn,'registered')
                 self.clients["Default"].append(conn)
                 logging.debug(self.clients)
+    
         #else:
         #    print('closing', conn)
         #    logging.debug('---> client unregistered')

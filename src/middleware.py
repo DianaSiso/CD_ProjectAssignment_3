@@ -33,11 +33,11 @@ class Queue:
 
     def push(self, value):
         """Sends data to broker. """
-        if(self.queue_type==json):
+        if(self.queue_type==1):
             mespush=protocol.push(self.topic,value).__str__json()
-        if(self.queue_type==pickle):
+        if(self.queue_type==2):
             mespush=protocol.push(self.topic,value).__str__pickle()
-        CDProto.send_msg(self.sock,mespush)
+        CDProto.send_msg(self.sock,mespush,self.queue_type)
         #self.broker.put_topic(self.topic,value)
 
 
@@ -46,14 +46,14 @@ class Queue:
         """Receives (topic, data) from broker.
 
         Should BLOCK the consumer!"""
-        if(self.queue_type==json):
+        if(self.queue_type==1):
             mespull=protocol.pull(self.topic,value).__str__json()
-        if(self.queue_type==pickle):
+        if(self.queue_type==2):
             mespull=protocol.pull(self.topic,value).__str__pickle()
-        CDProto.send_msg(self.sock,mespull)
-        value=CDProto.recv_msg(self.sock,self.queue_type).__str__() #bloqueia
+        CDProto.send_msg(self.sock,mespull,self.queue_type)
+        value=CDProto.recv_msg(self.sock).__str__() #bloqueia
         while(value==None):
-            value=CDProto.recv_msg(self.sock,self.queue_type)__str__() #bloqueia
+            value=CDProto.recv_msg(self.sock)__str__() #bloqueia
         return (self.topic,value)
 
 
@@ -61,44 +61,44 @@ class Queue:
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
         #self.broker.list_topics()
-        if(self.queue_type==json):
+        if(self.queue_type==1):
             mesl=protocol.lists().__str__json()
-        if(self.queue_type==pickle):
+        if(self.queue_type==2):
             mesl=protocol.lists().__str__pickle()
-        CDProto.send_msg(self.sock,mesl)
+        CDProto.send_msg(self.sock,mesl,self.queue_type)
 
 
     def cancel(self):
         """Cancel subscription."""
-        if(self.queue_type==json):
+        if(self.queue_type==1):
             mesccl=protocol.cancel(self.topic).__str__json()
-        if(self.queue_type==pickle):
+        if(self.queue_type==2):
             mesccl=protocol.cancel(self.topic).__str__pickle()
-        CDProto.send_msg(self.sock,mesccl)
+        CDProto.send_msg(self.sock,mesccl,self.queue_type)
         #self.broker.unsubscribe(self.topic,self.queue) #precisamos de um endereço e serializer
 
 
 class JSONQueue(Queue):
     """Queue implementation with JSON based serialization."""
-    self.queue_type=json
+    self.queue_type=1
     if(Queue._type=MiddlewareType.CONSUMER) :
         mesreg=protocol.register(self.topic).__str__json()
-        CDProto.send_msg(self.sock,mesreg)
+        CDProto.send_msg(self.sock,mesreg,1)
     
 
 
 
 class XMLQueue(Queue):
     """Queue implementation with XML based serialization."""
-    self.queue_type=xml
+    self.queue_type=0
     if(Queue._type=MiddlewareType.CONSUMER) :
             
 
 class PickleQueue(Queue):
     """Queue implementation with Pickle based serialization."""
-    self.queue_type=pickle
+    self.queue_type=2
     if(Queue._type==MiddlewareType.CONSUMER) :
         mesreg=protocol.register(self.topic).__str__pickle()
-        CDProto.send_msg(self.sock,mesreg)
+        CDProto.send_msg(self.sock,mesreg,2)
            
     

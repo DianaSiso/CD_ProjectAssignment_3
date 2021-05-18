@@ -125,30 +125,37 @@ class CDProto:
         return RepPullMessage(value)   
     
    
+    
     @classmethod
-    def send_msg(cls, connection: socket, msg: Message ):
+    def send_msg(cls, connection: socket, msg: Message ,serializer:int):
         """Sends through a connection a Message object."""
         data=msg.encode(encoding='UTF-8') #dar encode para bytes
+        ser=serializer.to_bytes(2,byteorder='big')
         mess=len(data).to_bytes(2,byteorder='big') #tamanho da mensagem em bytes
+        mess+=ser
         mess+=data #mensagem final contendo o cabeçalho e a mensagem
         connection.sendall(mess) #enviar mensagem final
-        
+    
+    
         
 
     @classmethod
-    def recv_msg(cls, connection: socket, serial: str) -> Message:
+    def recv_msg(cls, connection: socket) -> Message:
         """Receives through a connection a Message object."""
         header=connection.recv(2) #recevemos os 2 primeiros bits
         head=int.from_bytes(header,byteorder='big') #contem o tamanho da mensagem 
         if head!=0:
+            ser=connection.recv(2)
+            serializer=int.from_bytes(ser,byteorder='big') # vemos o serializer da mensagem
             message=connection.recv(head) #recebemos os bits correspondente á mensagem
             datat=message.decode(encoding='UTF-8')#descodificamos a mensagem 
-            if(serial=="json"):
+            if(serializer==1):
                 data=json.loads(datat) # vira json
-            else if(serial=="pickle"):
+                
+            else if(serializer==2):
                 data=pickle.loads(datat) # vira pickle
-            if data.get('command'=='reppull')
-                return cls.reppull(data.get('value'))
+            return data
+            
         else:
             return None
         
