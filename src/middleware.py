@@ -4,6 +4,8 @@ from enum import Enum
 from queue import LifoQueue, Empty
 from .broker import Broker
 import socket
+from .protocol import CDProto
+
 
 
 class MiddlewareType(Enum):
@@ -31,79 +33,72 @@ class Queue:
 
     def push(self, value):
         """Sends data to broker. """
-        msg = {'tipo': "push", 'data':value}
-        sendmsg(self.sock,msg)
-        
+        if(self.queue_type==json):
+            mespush=protocol.push(self.topic,value).__str__json()
+        if(self.queue_type==pickle):
+            mespush=protocol.push(self.topic,value).__str__pickle()
+        CDProto.send_msg(self.sock,mespush)
         #self.broker.put_topic(self.topic,value)
 
 
 
-    def pull(self) -> (str, tuple):
+    def pull(self) -> (str, str):
         """Receives (topic, data) from broker.
 
         Should BLOCK the consumer!"""
-        sendmsg("dame o value do topic")
-        rec("é este o value")
-        data= rcvmsg
+        if(self.queue_type==json):
+            mespull=protocol.pull(self.topic,value).__str__json()
+        if(self.queue_type==pickle):
+            mespull=protocol.pull(self.topic,value).__str__pickle()
+        CDProto.send_msg(self.sock,mespull)
+        value=CDProto.recv_msg(self.sock,self.queue_type).__str__() #bloqueia
+        while(value==None):
+            value=CDProto.recv_msg(self.sock,self.queue_type)__str__() #bloqueia
+        return (self.topic,value)
 
-        data=self.broker.get_topic(self.topic)
-        while data==null:
-            data= self.broker.get_topic(self.topic)
-        return (self.topic,data)
-        #de onde vem o tuple
-
-
-        
 
 
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
-        self.broker.list_topics()
+        #self.broker.list_topics()
+        if(self.queue_type==json):
+            mesl=protocol.lists().__str__json()
+        if(self.queue_type==pickle):
+            mesl=protocol.lists().__str__pickle()
+        CDProto.send_msg(self.sock,mesl)
 
 
     def cancel(self):
         """Cancel subscription."""
-        self.broker.unsubscribe(self.topic,self.queue) #precisamos de um endereço e serializer
+        if(self.queue_type==json):
+            mesccl=protocol.cancel(self.topic).__str__json()
+        if(self.queue_type==pickle):
+            mesccl=protocol.cancel(self.topic).__str__pickle()
+        CDProto.send_msg(self.sock,mesccl)
+        #self.broker.unsubscribe(self.topic,self.queue) #precisamos de um endereço e serializer
 
 
 class JSONQueue(Queue):
     """Queue implementation with JSON based serialization."""
+    self.queue_type=json
     if(Queue._type=MiddlewareType.CONSUMER) :
-            self.broker.subscribe(Queue.topic, Queue.sock, 0)
+        mesreg=protocol.register(self.topic).__str__json()
+        CDProto.send_msg(self.sock,mesreg)
     
 
 
 
 class XMLQueue(Queue):
     """Queue implementation with XML based serialization."""
+    self.queue_type=xml
     if(Queue._type=MiddlewareType.CONSUMER) :
-            self.broker.subscribe(Queue.topic, Queue.sock, 1)
+            
 
 class PickleQueue(Queue):
     """Queue implementation with Pickle based serialization."""
-    if(Queue._type=MiddlewareType.CONSUMER) :
-            self.broker.subscribe(Queue.topic, Queue.sock, 2)
-
-    def sendmsg(cls,connection: socket ,msg:Dict):      
-        msgBytes=pickle.dumps(msg).encode('utf-8')
-        lenBytes=len(msgBytes).to_bytes(2,'big')
-        connection.sendall(lenBytes+msgBytes)
-    def rcvmsg(cls,connection:socket):
-
-        header=connection.recv(2) #recevemos os 2 primeiros bits
-        head=int.from_bytes(header,byteorder='big') #contem o tamanho da mensagem 
-        if head!=0:
-            message=connection.recv(head) #recebemos os bits correspondente á mensagem
-            datat=message.decode(encoding='UTF-8').replace("None",'"null"') #descodificamos a mensagem 
-            try:
-                data=json.loads(datat) # vira json
-                if data.get('command') == "join": 
-                    return cls.join(data.get('channel'))
-                if data.get('command') == "message":
-                    return cls.message(data.get('message'),data.get('channel'))
-                if data.get('command') == "register":
-                    return cls.register(data.get('user'))
-            except:
-                raise CDProtoBadFormat
-        else:
-            return None
+    self.queue_type=pickle
+    if(Queue._type==MiddlewareType.CONSUMER) :
+        mesreg=protocol.register(self.topic).__str__pickle()
+        CDProto.send_msg(self.sock,mesreg)
+           
+    

@@ -2,6 +2,7 @@
 from typing import Dict, List, Any, Tuple
 import socket
 import enum
+from .protocol import CDProto
 
 class Serializer(enum.Enum):
     """Possible message serializers."""
@@ -78,8 +79,51 @@ class Broker:
         pass
         
 
-    def accept(self,sock, mask):
+     def accept(self,sock, mask):
         conn, addr = self.sock.accept()  # Should be ready
         print('accepted', conn, 'from', addr)
         conn.setblocking(False)
         self.sel.register(conn, selectors.EVENT_READ, self.read)
+
+      def read(self,conn, mask):
+        data = CDProto.recv_msg(conn)  #the server reads the message sent through the socket
+        if data:
+            data=data.__str__()
+            logging.debug('received "%s"',data)
+            data2=json.loads(data) # turn the msg from Message to json
+            comm=data2.get('command')
+            if comm=="message": #if the commands are different from register and join               
+                chan=data2.get('channel')
+                print(chan)
+                if chan:
+                    for item in self.clients.get(chan):
+                        print('echoing', repr(data), 'to', item)
+                        CDProto.send_msg(item,data)
+                    
+                else:
+                    for item in self.clients.get("Default"):
+                        print('echoing', repr(data), 'to', item)
+                        CDProto.send_msg(item,data)
+                
+            elif comm=="join":
+                chan=data2.get('channel')#guardar isto num dic ou algo do genero
+                if chan in self.clients :
+                    self.clients[chan].append(conn)
+                else:
+                    self.clients[chan]=[conn]
+                print(conn, 'joined', chan)
+                logging.debug(self.clients)
+
+            else:
+                print(conn,'registered')
+                self.clients["Default"].append(conn)
+                logging.debug(self.clients)
+        #else:
+        #    print('closing', conn)
+        #    logging.debug('---> client unregistered')
+        #    for key in self.clients:
+        #        if conn in self.clients[key]:
+        #            self.clients[key].remove(conn)
+        #    logging.debug(self.clients)
+        #    self.sel.unregister(conn)
+        #    conn.close()
