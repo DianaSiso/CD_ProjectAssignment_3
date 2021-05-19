@@ -33,7 +33,7 @@ class CancelMessage(Message):
         self.topic=topic
     def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command, 'topic':self.topic})
-    def __str__pickle(self):
+    def _PICKLEQueue__str__pickle(self):
         return pickle.dumps({'command':self.command, 'topic':self.topic})
 
 class ListMessage(Message):
@@ -42,8 +42,12 @@ class ListMessage(Message):
         super().__init__(command)
     def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command})
-    def __str__pickle(self):
+    def _PICKLEQueue__str__pickle(self):
         return pickle.dumps({'command':self.command})
+    def _XMLQueue__str__xml(self):
+        msg = {'command':self.command}
+        conv = ('<?xml version="1.0"?><data command="%(command)s"></data>' % msg)
+        return conv
 
 class PushMessage(Message):
     """Message to register username in the server."""
@@ -55,7 +59,9 @@ class PushMessage(Message):
         return json.dumps({'command':self.command,'topic':self.topic,'value':self.value})
     def _Queue__str__json(self):
         return json.dumps({'command':self.command,'topic':self.topic,'value':self.value})
-    def __str__pickle(self):
+    def PICKLEQueue__str__pickle(self):
+        return pickle.dumps({'command':self.command,'topic':self.topic,'value':self.value})
+    def _Queue__str__pickle(self):
         return pickle.dumps({'command':self.command,'topic':self.topic,'value':self.value})
 
     def _XMLQueue__str__xml(self):
@@ -75,8 +81,13 @@ class PullMessage(Message):
         self.topic=topic
     def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command,'topic':self.topic})
-    def __str__pickle(self):
+    def _PICKLEQueue__str__pickle(self):
         return pickle.dumps({'command':self.command,'topic':self.topic})
+    def _XMLQueue__str__xml(self):
+        msg = {'command':self.command,'topic':self.topic}
+        conv = ('<?xml version="1.0"?><data command="%(command)s" topic="%(topic)s"></data>' % msg)
+        return conv
+
 
 class RepPullMessage(Message):
     """Message to register username in the server."""
@@ -86,9 +97,13 @@ class RepPullMessage(Message):
         
     def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command,'value':self.value})
-    def __str__pickle(self):
+    def _PICKLEQueue__str__pickle(self):
         return pickle.dumps({'command':self.command,'value':self.value})
-    
+    def _XMLQueue__str__xml(self):
+        msg = {'command':self.command,'value':self.value}
+        conv = ('<?xml version="1.0"?><data command="%(command)s" value="%(value)s"></data>' % msg)
+        return conv
+
 class RepPushMessage(Message):
     """Message to register username in the server."""
     def __init__(self,value,command="reppull"):
@@ -96,9 +111,12 @@ class RepPushMessage(Message):
         self.value=value
     def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command,'value':self.value})
-    def __str__pickle(self):
+    def _PICKLEQueue__str__pickle(self):
         return pickle.dumps({'command':self.command,'value':self.value})
-    
+    def _XMLQueue__str__xml(self):
+        msg = {'command':self.command,'value':self.value}
+        conv = ('<?xml version="1.0"?><data command="%(command)s" value="%(value)s"></data>' % msg)
+        return conv
 
 class CDProto:
     """Computação Distribuida Protocol."""
