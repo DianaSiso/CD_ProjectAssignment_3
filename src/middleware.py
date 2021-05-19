@@ -21,17 +21,31 @@ class Queue:
 
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         """Create Queue."""
+        self.canceled = False
         self.queue=LifoQueue()
         self.topic=topic
         self._type=_type
         self.sel=selectors.DefaultSelector()
         self.sock = socket.socket()
-        self.sock.connect_ex(('localhost', 5000))
-        self.queue_type=0
+        self.sock.connect_ex(('localhost', 5001))
+        self.queue_type = 0
         self.sel.register(self.sock, selectors.EVENT_READ,self.pull) #ao receber algo vai ler
         
-    def __type__(self, queue_type):
-        self.queue_type = queue_type
+    def accept(self,sock, mask):
+        conn, addr = self.sock.accept()  # Should be ready
+        print('accepted', conn, 'from', addr)
+        conn.setblocking(False)
+        self.sel.register(conn, selectors.EVENT_READ, self.pull)
+
+    def run(self):
+        """Run until canceled."""
+        
+        while not self.canceled:
+            events = self.sel.select()
+            for key, mask in events:
+                callback = key.data
+                callback(key.fileobj, mask)
+        pass
 
     def push(self, value):
         """Sends data to broker. """
@@ -44,6 +58,8 @@ class Queue:
             mespush=CDProto.push(self.topic,value).__str__json()
         if(self.queue_type==2):
             mespush=CDProto.push(self.topic,value).__str__pickle()
+        if(self.queue_type==0):
+            mespush=CDProto.push(self.topic,value).__str__xml()
         CDProto.send_msg(self.sock,mespush,self.queue_type)
         #self.broker.put_topic(self.topic,value)
 
@@ -93,39 +109,61 @@ class JSONQueue(Queue):
     
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         super().__init__(topic, _type)
+        self.queue_type = 1
         self.run()
 
+
     def run(self):
+        if(self._type==MiddlewareType.CONSUMER) :
+            temp = CDProto.register(self.topic)
+            print()
+            print()
+            print()
+            print()
+            print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+            mesreg=temp.__str__json()
+            print(self.sock)
+            CDProto.send_msg(self.sock,mesreg,1)
         
-        type_ = 1
-        Queue.__type__(type_)
-        if(Queue._type==MiddlewareType.CONSUMER) :
-            mesreg=CDProto.register(Queue.topic).__str__json()
-            CDProto.send_msg(Queue.sock,mesreg,1)
-            #mespull=CDProto.pull(Queue.topic).__str__json()
-            #CDProto.send_msg(Queue.sock,mespull,1)
-            #Queue.pull()
-        
-        if(Queue._type==MiddlewareType.PRODUCER) :
-            print("CRIEI")
 
 
 
 
 class XMLQueue(Queue):
     """Queue implementation with XML based serialization."""
-    Queue.queue_type=0
-            
+    def __init__(self, topic, _type=MiddlewareType.CONSUMER):
+        super().__init__(topic, _type)
+        self.queue_type = 0
+        self.run()
+
+    def run(self):
+        if(self._type==MiddlewareType.CONSUMER) :
+            temp = CDProto.register(self.topic)
+            print()
+            print()
+            print()
+            print()
+            print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+            mesreg=temp.__str__xml()
+            print(self.sock)
+            CDProto.send_msg(self.sock,mesreg,0)        
 
 class PickleQueue(Queue):
     """Queue implementation with Pickle based serialization."""
-    
+    def __init__(self, topic, _type=MiddlewareType.CONSUMER):
+        super().__init__(topic, _type)
+        self.queue_type = 2
+        self.run()
+
     def run(self):
-        Queue.__type__(2)
-        if(Queue._type==MiddlewareType.CONSUMER) :
-            mesreg=CDProto.register(Queue.topic).__str__pickle()
-            CDProto.send_msg(Queue.sock,mesreg,2)
-            #mespull=CDProto.pull(Queue.topic).__str__pickle()
-            #CDProto.send_msg(Queue.sock,mespull,2)
-            #Queue.pull()
+        if(self._type==MiddlewareType.CONSUMER) :
+            temp = CDProto.register(self.topic)
+            print()
+            print()
+            print()
+            print()
+            print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+            mesreg=temp.__str__pickle()
+            print(self.sock)
+            CDProto.send_msg(self.sock,mesreg,2)
     

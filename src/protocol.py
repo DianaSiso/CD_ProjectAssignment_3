@@ -1,6 +1,8 @@
 """Protocol for chat server - Computação Distribuida Assignment 1."""
 import json
 import time
+import xml.etree.ElementTree as element_tree
+import xml
 from socket import socket
 import pickle
 
@@ -15,17 +17,21 @@ class RegisterMessage(Message):
     def __init__(self,topic,command="register"):
         super().__init__(command)
         self.topic=topic
-    def __str__json(self):
+    def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command, 'topic':self.topic,'serializer':1})
-    def __str__pickle(self):
+    def _PICKLEQueue__str__pickle(self):
         return pickle.dumps({'command':self.command, 'topic':self.topic,'serializer':2})
+    def _XMLQueue__str__xml(self):
+        msg = {'command':self.command, 'topic':self.topic,'serializer':0}
+        conv = ('<?xml version="1.0"?><data command="%(command)s" topic="%(topic)s"  serializer="%(serializer)s"></data>' % msg)
+        return conv
 
 class CancelMessage(Message):
     """Message to register username in the server."""
     def __init__(self,topic,command="cancel"):
         super().__init__(command)
         self.topic=topic
-    def __str__json(self):
+    def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command, 'topic':self.topic})
     def __str__pickle(self):
         return pickle.dumps({'command':self.command, 'topic':self.topic})
@@ -34,7 +40,7 @@ class ListMessage(Message):
     """Message to register username in the server."""
     def __init__(self,command="list"):
         super().__init__(command)
-    def __str__json(self):
+    def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command})
     def __str__pickle(self):
         return pickle.dumps({'command':self.command})
@@ -45,17 +51,29 @@ class PushMessage(Message):
         super().__init__(command)
         self.topic=topic
         self.value=value
-    def __str__json(self):
+    def _JSONQueue__str__json(self):
+        return json.dumps({'command':self.command,'topic':self.topic,'value':self.value})
+    def _Queue__str__json(self):
         return json.dumps({'command':self.command,'topic':self.topic,'value':self.value})
     def __str__pickle(self):
         return pickle.dumps({'command':self.command,'topic':self.topic,'value':self.value})
+
+    def _XMLQueue__str__xml(self):
+        msg = {'command':self.command,'topic':self.topic,'value':self.value}
+        conv = ('<?xml version="1.0"?><data command="%(command)s" topic="%(topic)s"><value>%(value)s"</value></data>' % msg)
+        return conv
+    def _Queue__str__xml(self):
+        msg = {'command':self.command,'topic':self.topic,'value':self.value}
+        conv = ('<?xml version="1.0"?><data command="%(command)s" topic="%(topic)s"><value>%(value)s"</value></data>' % msg)
+        return conv
+
 
 class PullMessage(Message):
     """Message to register username in the server."""
     def __init__(self,topic,command="pull"):
         super().__init__(command)
         self.topic=topic
-    def __str__json(self):
+    def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command,'topic':self.topic})
     def __str__pickle(self):
         return pickle.dumps({'command':self.command,'topic':self.topic})
@@ -66,7 +84,7 @@ class RepPullMessage(Message):
         super().__init__(command)
         self.value=value
         
-    def __str__json(self):
+    def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command,'value':self.value})
     def __str__pickle(self):
         return pickle.dumps({'command':self.command,'value':self.value})
@@ -76,7 +94,7 @@ class RepPushMessage(Message):
     def __init__(self,value,command="reppull"):
         super().__init__(command)
         self.value=value
-    def __str__json(self):
+    def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command,'value':self.value})
     def __str__pickle(self):
         return pickle.dumps({'command':self.command,'value':self.value})
@@ -142,6 +160,9 @@ class CDProto:
                 data=json.loads(datat) # vira json
             elif (serializer==2):
                 data=pickle.loads(datat) # vira pickle
+            else:
+                decoded_xml = element_tree.fromstring(datat)
+                data = decoded_xml.attrib
             return data
             
         else:
