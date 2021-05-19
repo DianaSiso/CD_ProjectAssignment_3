@@ -33,7 +33,10 @@ class Broker:
 
     def list_topics(self) -> List[str]:
         """Returns a list of strings containing all topics."""
-        return self.topics.keys()
+        newlist= list()
+        for i in self.topics.keys():
+            newlist.append(i)
+        return newlist
 
     def get_topic(self, topic):
         """Returns the currently stored value in topic."""
@@ -78,21 +81,25 @@ class Broker:
 
     def accept(self,sock, mask):
         conn, addr = self.sock.accept()  # Should be ready
-        print('accepted', conn, 'from', addr)
+        #print('accepted', conn, 'from', addr)
         conn.setblocking(False)
         self.sel.register(conn, selectors.EVENT_READ, self.read)
 
     
     def read(self,conn, mask):
-            data = CDProto.recv_msg(conn)  #the server reads the message sent through the socket
-            print("!!!!!!!!!")
-            print(data)
-            comm=data.get('command')
-        
+            data,ser = CDProto.recv_msg(conn)  #the server reads the message sent through the socket
+            
+            comm=data['command']
+
             if comm=="register":
-                self.subscribe(data['topic'], conn)
-                msg= CDProto.reppull(self.get_topic(data['topic']))
-                CDProto.send_msg(conn, msg, data['serializer'])
+                self.subscribe(data['topic'], conn,ser)
+                if(ser==1):
+                    msg= CDProto.reppull(self.get_topic(data['topic'])).__str__json()
+                elif(ser==2):
+                    msg= CDProto.reppull(self.get_topic(data['topic'])).__str__pickle()
+                else:
+                    msg= CDProto.reppull(self.get_topic(data['topic'])).__str__xml()
+                CDProto.send_msg(conn, msg, int(ser))
             elif comm=="cancel":
                 self.unsubscribe(data['topic'], conn)
             elif comm=="lists":
@@ -102,10 +109,11 @@ class Broker:
                 self.put_topic(data['topic'], data['value'])
                 for element in res:
                     if element[1] == "1":
-                        msg = CDProto.reppush(data['value']).__str__json()
+                        msg = CDProto.reppull(data['value']).__str__json()
                     elif element[1] == "2":
-                        msg = CDProto.reppush(data['value']).__str__pickle()
-                   
+                        msg = CDProto.reppull(data['value']).__str__pickle()
+                    else:
+                        msg = CDProto.reppull(data['value']).__str__xml()
                     CDProto.send_msg(element[0], msg, element[1])
 
             #elif comm=="pull":

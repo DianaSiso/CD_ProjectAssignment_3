@@ -19,7 +19,7 @@ class RegisterMessage(Message):
         self.topic=topic
     def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command, 'topic':self.topic,'serializer':1})
-    def _PICKLEQueue__str__pickle(self):
+    def _PickleQueue__str__pickle(self):
         return pickle.dumps({'command':self.command, 'topic':self.topic,'serializer':2})
     def _XMLQueue__str__xml(self):
         msg = {'command':self.command, 'topic':self.topic,'serializer':0}
@@ -33,8 +33,13 @@ class CancelMessage(Message):
         self.topic=topic
     def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command, 'topic':self.topic})
-    def _PICKLEQueue__str__pickle(self):
+    def _PickleQueue__str__pickle(self):
         return pickle.dumps({'command':self.command, 'topic':self.topic})
+    def _XMLQueue__str__xml(self):
+        msg = {'command':self.command, 'topic':self.topic}
+        conv = ('<?xml version="1.0"?><data command="%(command)s" topic="%(topic)s"  "></data>' % msg)
+        return conv
+
 
 class ListMessage(Message):
     """Message to register username in the server."""
@@ -42,7 +47,7 @@ class ListMessage(Message):
         super().__init__(command)
     def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command})
-    def _PICKLEQueue__str__pickle(self):
+    def _PickleQueue__str__pickle(self):
         return pickle.dumps({'command':self.command})
     def _XMLQueue__str__xml(self):
         msg = {'command':self.command}
@@ -59,11 +64,12 @@ class PushMessage(Message):
         return json.dumps({'command':self.command,'topic':self.topic,'value':self.value})
     def _Queue__str__json(self):
         return json.dumps({'command':self.command,'topic':self.topic,'value':self.value})
-    def PICKLEQueue__str__pickle(self):
+    def _PickleQueue__str__pickle(self):
+        return pickle.dumps({'command':self.command,'topic':self.topic,'value':self.value})
+    def __str__pickle(self):
         return pickle.dumps({'command':self.command,'topic':self.topic,'value':self.value})
     def _Queue__str__pickle(self):
         return pickle.dumps({'command':self.command,'topic':self.topic,'value':self.value})
-
     def _XMLQueue__str__xml(self):
         msg = {'command':self.command,'topic':self.topic,'value':self.value}
         conv = ('<?xml version="1.0"?><data command="%(command)s" topic="%(topic)s"><value>%(value)s"</value></data>' % msg)
@@ -81,7 +87,7 @@ class PullMessage(Message):
         self.topic=topic
     def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command,'topic':self.topic})
-    def _PICKLEQueue__str__pickle(self):
+    def _PickleQueue__str__pickle(self):
         return pickle.dumps({'command':self.command,'topic':self.topic})
     def _XMLQueue__str__xml(self):
         msg = {'command':self.command,'topic':self.topic}
@@ -89,7 +95,7 @@ class PullMessage(Message):
         return conv
 
 
-class RepPullMessage(Message):
+class RepMessage(Message):
     """Message to register username in the server."""
     def __init__(self,value,command="reppull"):
         super().__init__(command)
@@ -97,26 +103,23 @@ class RepPullMessage(Message):
         
     def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command,'value':self.value})
-    def _PICKLEQueue__str__pickle(self):
+    def _PickleQueue__str__pickle(self):
         return pickle.dumps({'command':self.command,'value':self.value})
     def _XMLQueue__str__xml(self):
+        msg = {'command':self.command,'value':self.value}
+        conv = ('<?xml version="1.0"?><data command="%(command)s" value="%(value)s"></data>' % msg)
+        return conv
+    def _Broker__str__json(self):
+        return json.dumps({'command':self.command,'value':self.value})
+    def _Broker__str__pickle(self):
+        return pickle.dumps({'command':self.command,'value':self.value})
+    def _Broker__str__xml(self):
         msg = {'command':self.command,'value':self.value}
         conv = ('<?xml version="1.0"?><data command="%(command)s" value="%(value)s"></data>' % msg)
         return conv
 
-class RepPushMessage(Message):
-    """Message to register username in the server."""
-    def __init__(self,value,command="reppull"):
-        super().__init__(command)
-        self.value=value
-    def _JSONQueue__str__json(self):
-        return json.dumps({'command':self.command,'value':self.value})
-    def _PICKLEQueue__str__pickle(self):
-        return pickle.dumps({'command':self.command,'value':self.value})
-    def _XMLQueue__str__xml(self):
-        msg = {'command':self.command,'value':self.value}
-        conv = ('<?xml version="1.0"?><data command="%(command)s" value="%(value)s"></data>' % msg)
-        return conv
+
+
 
 class CDProto:
     """Computação Distribuida Protocol."""
@@ -146,18 +149,18 @@ class CDProto:
         return PullMessage(topic)   
 
     @classmethod
-    def reppull(cls, value: str) -> RepPullMessage:
+    def reppull(cls, value: str) -> RepMessage:
         """Creates a RegisterMessage object."""
-        return RepPullMessage(value)   
-    
-    def reppush(cls, value: str) -> RepPushMessage:
-        """Creates a RegisterMessage object."""
-        return RepPushMessage(value)   
+        return RepMessage(value)   
+     
     
     @classmethod
     def send_msg(cls, connection: socket, msg: Message ,serializer:int):
         """Sends through a connection a Message object."""
-        data=msg.encode(encoding='UTF-8') #dar encode para bytes
+        if(serializer==1 or serializer==0):
+            data=msg.encode(encoding='UTF-8') #dar encode para bytes
+        else: 
+            data=msg
         ser=serializer.to_bytes(2,byteorder='big')
         mess=len(data).to_bytes(2,byteorder='big') #tamanho da mensagem em bytes
         mess+=ser
@@ -173,7 +176,10 @@ class CDProto:
             ser=connection.recv(2)
             serializer=int.from_bytes(ser,byteorder='big') # vemos o serializer da mensagem
             message=connection.recv(head) #recebemos os bits correspondente á mensagem
-            datat=message.decode(encoding='UTF-8')#descodificamos a mensagem 
+            if(serializer==2):
+                datat=message
+            else:
+                datat=message.decode(encoding='UTF-8')#descodificamos a mensagem 
             if(serializer==1):
                 data=json.loads(datat) # vira json
             elif (serializer==2):
@@ -181,7 +187,7 @@ class CDProto:
             else:
                 decoded_xml = element_tree.fromstring(datat)
                 data = decoded_xml.attrib
-            return data
+            return data,serializer
             
         else:
             return None

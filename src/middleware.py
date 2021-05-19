@@ -27,13 +27,13 @@ class Queue:
         self._type=_type
         self.sel=selectors.DefaultSelector()
         self.sock = socket.socket()
-        self.sock.connect_ex(('localhost', 5001))
+        self.sock.connect(('localhost', 5000))
         self.queue_type = 0
         self.sel.register(self.sock, selectors.EVENT_READ,self.pull) #ao receber algo vai ler
         
     def accept(self,sock, mask):
         conn, addr = self.sock.accept()  # Should be ready
-        print('accepted', conn, 'from', addr)
+        #print('accepted', conn, 'from', addr)
         conn.setblocking(False)
         self.sel.register(conn, selectors.EVENT_READ, self.pull)
 
@@ -49,9 +49,6 @@ class Queue:
 
     def push(self, value):
         """Sends data to broker. """
-        print("~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(value)
-        print(self.queue_type)
         mespush = ""
        
         if(self.queue_type==1):
@@ -60,6 +57,7 @@ class Queue:
             mespush=CDProto.push(self.topic,value).__str__pickle()
         if(self.queue_type==0):
             mespush=CDProto.push(self.topic,value).__str__xml()
+            
         CDProto.send_msg(self.sock,mespush,self.queue_type)
         #self.broker.put_topic(self.topic,value)
 
@@ -69,9 +67,10 @@ class Queue:
         """Waits for (topic, data) from broker.
 
         Should BLOCK the consumer!"""
-        data = self.socket.revc(1000)
+        data = self.sock.recv(1000)
         if data:
-            value = CDProto.recv_msg(self.sock).__str__()
+            things,ser = CDProto.recv_msg(self.sock)
+            value=things['value']
             return self.topic, value
         else:
             pass
@@ -116,13 +115,7 @@ class JSONQueue(Queue):
     def run(self):
         if(self._type==MiddlewareType.CONSUMER) :
             temp = CDProto.register(self.topic)
-            print()
-            print()
-            print()
-            print()
-            print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
             mesreg=temp.__str__json()
-            print(self.sock)
             CDProto.send_msg(self.sock,mesreg,1)
         
 
@@ -139,13 +132,7 @@ class XMLQueue(Queue):
     def run(self):
         if(self._type==MiddlewareType.CONSUMER) :
             temp = CDProto.register(self.topic)
-            print()
-            print()
-            print()
-            print()
-            print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
             mesreg=temp.__str__xml()
-            print(self.sock)
             CDProto.send_msg(self.sock,mesreg,0)        
 
 class PickleQueue(Queue):
@@ -158,12 +145,6 @@ class PickleQueue(Queue):
     def run(self):
         if(self._type==MiddlewareType.CONSUMER) :
             temp = CDProto.register(self.topic)
-            print()
-            print()
-            print()
-            print()
-            print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
             mesreg=temp.__str__pickle()
-            print(self.sock)
             CDProto.send_msg(self.sock,mesreg,2)
     
