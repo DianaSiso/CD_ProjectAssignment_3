@@ -71,6 +71,8 @@ class Queue:
         if data:
             things,ser = CDProto.recv_msg(self.sock)
             value=things['value']
+            print("-------------")
+            print(value)
             return self.topic, value
         else:
             pass
@@ -90,6 +92,8 @@ class Queue:
             mesl=CDProto.lists().__str__json()
         if(self.queue_type==2):
             mesl=CDProto.lists().__str__pickle()
+        if(self.queue_type==3):
+            mesl=CDProto.lists().__str__xml()
         CDProto.send_msg(self.sock,mesl,self.queue_type)
 
 
@@ -99,6 +103,8 @@ class Queue:
             mesccl=CDProto.cancel(self.topic).__str__json()
         if(self.queue_type==2):
             mesccl=CDProto.cancel(self.topic).__str__pickle()
+        if(self.queue_type==0):
+            mesccl=CDProto.cancel(self.topic).__str__xml()
         CDProto.send_msg(self.sock,mesccl,self.queue_type)
         #self.broker.unsubscribe(self.topic,self.queue) #precisamos de um endereço e serializer
 

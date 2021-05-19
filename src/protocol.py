@@ -60,6 +60,8 @@ class PushMessage(Message):
         super().__init__(command)
         self.topic=topic
         self.value=value
+        print("value pre-send:")
+        print(value)
     def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command,'topic':self.topic,'value':self.value})
     def _Queue__str__json(self):
@@ -100,7 +102,8 @@ class RepMessage(Message):
     def __init__(self,value,command="reppull"):
         super().__init__(command)
         self.value=value
-        
+        print("value pos-send:")
+        print(value)
     def _JSONQueue__str__json(self):
         return json.dumps({'command':self.command,'value':self.value})
     def _PickleQueue__str__pickle(self):
@@ -156,11 +159,15 @@ class CDProto:
     
     @classmethod
     def send_msg(cls, connection: socket, msg: Message ,serializer:int):
+        print(serializer)
+        print(msg)
         """Sends through a connection a Message object."""
         if(serializer==1 or serializer==0):
             data=msg.encode(encoding='UTF-8') #dar encode para bytes
+            
         else: 
             data=msg
+            
         ser=serializer.to_bytes(2,byteorder='big')
         mess=len(data).to_bytes(2,byteorder='big') #tamanho da mensagem em bytes
         mess+=ser

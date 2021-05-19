@@ -97,7 +97,7 @@ class Broker:
                     msg= CDProto.reppull(self.get_topic(data['topic'])).__str__json()
                 elif(ser==2):
                     msg= CDProto.reppull(self.get_topic(data['topic'])).__str__pickle()
-                else:
+                elif(ser==0):
                     msg= CDProto.reppull(self.get_topic(data['topic'])).__str__xml()
                 CDProto.send_msg(conn, msg, int(ser))
             elif comm=="cancel":
@@ -108,11 +108,11 @@ class Broker:
                 res = self.list_subscriptions(data['topic'])
                 self.put_topic(data['topic'], data['value'])
                 for element in res:
-                    if element[1] == "1":
+                    if element[1] == 1:
                         msg = CDProto.reppull(data['value']).__str__json()
-                    elif element[1] == "2":
+                    elif element[1] == 2:
                         msg = CDProto.reppull(data['value']).__str__pickle()
-                    else:
+                    elif element[1] == 0:
                         msg = CDProto.reppull(data['value']).__str__xml()
                     CDProto.send_msg(element[0], msg, element[1])
 
