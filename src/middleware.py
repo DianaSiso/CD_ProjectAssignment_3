@@ -6,6 +6,7 @@ from .broker import Broker
 import socket
 from .protocol import CDProto
 from typing import Any
+import json
 import selectors
 
 class MiddlewareType(Enum):
@@ -26,12 +27,19 @@ class Queue:
         self.sel=selectors.DefaultSelector()
         self.sock = socket.socket()
         self.sock.connect_ex(('localhost', 5000))
+        self.queue_type=0
         self.sel.register(self.sock, selectors.EVENT_READ,self.pull) #ao receber algo vai ler
-         
+        
+    def __type__(self, queue_type):
+        self.queue_type = queue_type
 
     def push(self, value):
         """Sends data to broker. """
+        print("~~~~~~~~~~~~~~~~~~~~~~~~")
+        print(value)
+        print(self.queue_type)
         mespush = ""
+       
         if(self.queue_type==1):
             mespush=CDProto.push(self.topic,value).__str__json()
         if(self.queue_type==2):
@@ -41,15 +49,22 @@ class Queue:
 
 
 
-    def pull(self) -> (str, str):
+    def pull(self):
         """Waits for (topic, data) from broker.
 
         Should BLOCK the consumer!"""
-        
-        value=CDProto.recv_msg(self.sock).__str__() #bloqueia
-        while(value==None):
-            value=CDProto.recv_msg(self.sock).__str__()  #bloqueia
-        return (self.topic, value)
+        data = self.socket.revc(1000)
+        if data:
+            value = CDProto.recv_msg(self.sock).__str__()
+            return self.topic, value
+        else:
+            pass
+
+
+        #value=CDProto.recv_msg(self.sock).__str__() #bloqueia
+        #while(value==None):
+        #    value=CDProto.recv_msg(self.sock).__str__()  #bloqueia
+        #return (self.topic, value)
 
 
 
@@ -75,15 +90,25 @@ class Queue:
 
 class JSONQueue(Queue):
     """Queue implementation with JSON based serialization.""" 
+    
+    def __init__(self, topic, _type=MiddlewareType.CONSUMER):
+        super().__init__(topic, _type)
+        self.run()
 
     def run(self):
-        Queue.queue_type=1
+        
+        type_ = 1
+        Queue.__type__(type_)
         if(Queue._type==MiddlewareType.CONSUMER) :
             mesreg=CDProto.register(Queue.topic).__str__json()
             CDProto.send_msg(Queue.sock,mesreg,1)
             #mespull=CDProto.pull(Queue.topic).__str__json()
             #CDProto.send_msg(Queue.sock,mespull,1)
             #Queue.pull()
+        
+        if(Queue._type==MiddlewareType.PRODUCER) :
+            print("CRIEI")
+
 
 
 
@@ -96,7 +121,7 @@ class PickleQueue(Queue):
     """Queue implementation with Pickle based serialization."""
     
     def run(self):
-        Queue.queue_type=2
+        Queue.__type__(2)
         if(Queue._type==MiddlewareType.CONSUMER) :
             mesreg=CDProto.register(Queue.topic).__str__pickle()
             CDProto.send_msg(Queue.sock,mesreg,2)

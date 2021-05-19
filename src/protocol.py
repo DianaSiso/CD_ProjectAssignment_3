@@ -126,7 +126,7 @@ class CDProto:
         mess=len(data).to_bytes(2,byteorder='big') #tamanho da mensagem em bytes
         mess+=ser
         mess+=data #mensagem final contendo o cabeçalho e a mensagem
-        connection.sendall(mess) #enviar mensagem final
+        connection.send(mess) #enviar mensagem final
 
     @classmethod
     def recv_msg(cls, connection: socket) -> Message:

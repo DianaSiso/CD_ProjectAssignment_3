@@ -19,9 +19,13 @@ def gen():
 def test_simple_producer_JSON(broker):
 
     producer = Producer(TOPIC, gen, JSONQueue)
+    
 
     with patch("socket.socket.send", MagicMock()) as send:
         producer.run(1)
+
+        print("~~~~~~~~!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print(send.call_args[0][0])
 
         data_sent = send.call_args[0][0]
 
