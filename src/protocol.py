@@ -140,7 +140,6 @@ class CDProto:
             datat=message.decode(encoding='UTF-8')#descodificamos a mensagem 
             if(serializer==1):
                 data=json.loads(datat) # vira json
-                
             elif (serializer==2):
                 data=pickle.loads(datat) # vira pickle
             return data

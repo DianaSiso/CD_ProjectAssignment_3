@@ -23,10 +23,10 @@ class Queue:
         self.queue=LifoQueue()
         self.topic=topic
         self._type=_type
-        #self.sel=selectors.DefaultSelector()
+        self.sel=selectors.DefaultSelector()
         self.sock = socket.socket()
         self.sock.connect_ex(('localhost', 5000))
-        #self.sel.register(self.sock, selectors.EVENT_READ,self.pull) #ao receber algo vai ler
+        self.sel.register(self.sock, selectors.EVENT_READ,self.pull) #ao receber algo vai ler
          
 
     def push(self, value):
@@ -81,9 +81,9 @@ class JSONQueue(Queue):
         if(Queue._type==MiddlewareType.CONSUMER) :
             mesreg=CDProto.register(Queue.topic).__str__json()
             CDProto.send_msg(Queue.sock,mesreg,1)
-            mespull=CDProto.pull(Queue.topic).__str__json()
-            CDProto.send_msg(Queue.sock,mespull,1)
-            Queue.pull()
+            #mespull=CDProto.pull(Queue.topic).__str__json()
+            #CDProto.send_msg(Queue.sock,mespull,1)
+            #Queue.pull()
 
 
 
@@ -100,7 +100,7 @@ class PickleQueue(Queue):
         if(Queue._type==MiddlewareType.CONSUMER) :
             mesreg=CDProto.register(Queue.topic).__str__pickle()
             CDProto.send_msg(Queue.sock,mesreg,2)
-            mespull=CDProto.pull(Queue.topic).__str__pickle()
-            CDProto.send_msg(Queue.sock,mespull,2)
-            Queue.pull()
+            #mespull=CDProto.pull(Queue.topic).__str__pickle()
+            #CDProto.send_msg(Queue.sock,mespull,2)
+            #Queue.pull()
     

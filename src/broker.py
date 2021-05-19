@@ -85,10 +85,14 @@ class Broker:
     
     def read(self,conn, mask):
             data = CDProto.recv_msg(conn)  #the server reads the message sent through the socket
-            comm=data['command']
+            print("!!!!!!!!!")
+            print(data)
+            comm=data.get('command')
         
             if comm=="register":
                 self.subscribe(data['topic'], conn)
+                msg= CDProto.reppull(self.get_topic(data['topic']))
+                CDProto.send_msg(conn, msg, data['serializer'])
             elif comm=="cancel":
                 self.unsubscribe(data['topic'], conn)
             elif comm=="lists":
@@ -104,9 +108,9 @@ class Broker:
                    
                     CDProto.send_msg(element[0], msg, element[1])
 
-            elif comm=="pull":
-                msg= CDProto.reppull(self.get_topic(data['topic']))
-                CDProto.send_msg(conn, msg, data['serializer'])
+            #elif comm=="pull":
+            #    msg= CDProto.reppull(self.get_topic(data['topic']))
+            #    CDProto.send_msg(conn, msg, data['serializer'])
 
 
           
