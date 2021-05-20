@@ -19,7 +19,6 @@ def gen():
 def test_simple_producer_JSON(broker):
 
     producer = Producer(TOPIC, gen, JSONQueue)
-    
 
     with patch("socket.socket.send", MagicMock()) as send:
         producer.run(1)
@@ -41,10 +40,8 @@ def test_simple_producer_XML(broker):
     with patch("socket.socket.send", MagicMock()) as send:
         producer.run(1)
 
-        print(send.call_args)
         data_sent = send.call_args[0][0]
 
-        print(data_sent)
         assert b"<" in data_sent
         assert b">" in data_sent
         assert data_sent.count(b"<") == data_sent.count(b">")

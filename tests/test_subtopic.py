@@ -69,3 +69,4 @@ def test_multiple_producers_to_consumer(consumer_JSON, consumer_Pickle, broker):
     assert root in broker.list_topics()
 
     assert producer3.produced[0] not in consumer_Pickle.received
+

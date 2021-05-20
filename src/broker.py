@@ -20,7 +20,7 @@ class Broker:
         """Initialize broker."""
         self.canceled = False
         self._host = "localhost"
-        self._port = 5001
+        self._port = 5000
         self.topics={}
         self.subs={}
         self.sel=selectors.DefaultSelector()

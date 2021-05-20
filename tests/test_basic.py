@@ -64,7 +64,6 @@ def test_simple_producer_consumer(consumer_JSON, broker):
         with patch("pickle.dumps", MagicMock(side_effect=pickle.dumps)) as pickle_dump:
 
             producer.run(10)
-           
             assert pickle_dump.call_count == 0
             assert json_dump.call_count >= 10  # at least 10 JSON messages
 
