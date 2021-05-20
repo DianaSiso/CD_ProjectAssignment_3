@@ -27,7 +27,7 @@ class Queue:
         self._type=_type
         self.sel=selectors.DefaultSelector()
         self.sock = socket.socket()
-        self.sock.connect(('localhost', 5002))
+        self.sock.connect(('localhost', 5001))
         self.queue_type = 0
         self.sel.register(self.sock, selectors.EVENT_READ,self.accept) #ao receber algo vai ler
         
@@ -70,7 +70,7 @@ class Queue:
         
         things,ser = CDProto.recv_msg(self.sock)
         value=things['value']
-        print('value:' + str(value))
+        
         return self.topic, value
         
 
