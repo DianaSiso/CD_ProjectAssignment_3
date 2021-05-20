@@ -27,9 +27,9 @@ class Queue:
         self._type=_type
         self.sel=selectors.DefaultSelector()
         self.sock = socket.socket()
-        self.sock.connect(('localhost', 5000))
+        self.sock.connect(('localhost', 5002))
         self.queue_type = 0
-        self.sel.register(self.sock, selectors.EVENT_READ,self.pull) #ao receber algo vai ler
+        self.sel.register(self.sock, selectors.EVENT_READ,self.accept) #ao receber algo vai ler
         
     def accept(self,sock, mask):
         conn, addr = self.sock.accept()  # Should be ready
@@ -67,12 +67,11 @@ class Queue:
         """Waits for (topic, data) from broker.
 
         Should BLOCK the consumer!"""
-        data = self.sock.recv(1000)
+        data = self.sock.recv(10000)
+        print("\n~~~~~~~~~~~~~~")
         if data:
             things,ser = CDProto.recv_msg(self.sock)
             value=things['value']
-            print("-------------")
-            print(value)
             return self.topic, value
         else:
             pass
@@ -92,7 +91,7 @@ class Queue:
             mesl=CDProto.lists().__str__json()
         if(self.queue_type==2):
             mesl=CDProto.lists().__str__pickle()
-        if(self.queue_type==3):
+        if(self.queue_type==0):
             mesl=CDProto.lists().__str__xml()
         CDProto.send_msg(self.sock,mesl,self.queue_type)
 

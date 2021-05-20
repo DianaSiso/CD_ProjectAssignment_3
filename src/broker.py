@@ -8,8 +8,8 @@ import selectors
 class Serializer(enum.Enum):
     """Possible message serializers."""
 
-    JSON = 0
-    XML = 1
+    JSON = 2
+    XML = 0
     PICKLE = 2
 
 
@@ -20,7 +20,7 @@ class Broker:
         """Initialize broker."""
         self.canceled = False
         self._host = "localhost"
-        self._port = 5000
+        self._port = 5002
         self.topics={}
         self.subs={}
         self.sel=selectors.DefaultSelector()
@@ -110,12 +110,13 @@ class Broker:
                 for element in res:
                     if element[1] == 1:
                         msg = CDProto.reppull(data['value']).__str__json()
+                        print(msg)
                     elif element[1] == 2:
                         msg = CDProto.reppull(data['value']).__str__pickle()
                     elif element[1] == 0:
                         msg = CDProto.reppull(data['value']).__str__xml()
                     CDProto.send_msg(element[0], msg, element[1])
-
+                    print("mandei hehe")
             #elif comm=="pull":
             #    msg= CDProto.reppull(self.get_topic(data['topic']))
             #    CDProto.send_msg(conn, msg, data['serializer'])
