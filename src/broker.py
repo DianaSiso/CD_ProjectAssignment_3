@@ -88,35 +88,39 @@ class Broker:
     
     def read(self,conn, mask):
             data,ser = CDProto.recv_msg(conn)  #the server reads the message sent through the socket
-            
-            comm=data['command']
+            if(data!=None):
+                comm=data['command']
 
-            if comm=="register":
-                self.subscribe(data['topic'], conn,ser)
-                if(ser==1):
-                    msg= CDProto.reppull(self.get_topic(data['topic'])).__str__json()
-                elif(ser==2):
-                    msg= CDProto.reppull(self.get_topic(data['topic'])).__str__pickle()
-                elif(ser==0):
-                    msg= CDProto.reppull(self.get_topic(data['topic'])).__str__xml()
-                CDProto.send_msg(conn, msg, int(ser))
-            elif comm=="cancel":
-                self.unsubscribe(data['topic'], conn)
-            elif comm=="lists":
-                self.list_topics()
-            elif comm=="push":  #é sempre um produtor que vai usar este comando
-                res = self.list_subscriptions(data['topic'])
-                self.put_topic(data['topic'], data['value'])
-                for element in res:
-                    if element[1] == 1:
-                        msg = CDProto.reppull(data['value']).__str__json()
-                        print(msg)
-                    elif element[1] == 2:
-                        msg = CDProto.reppull(data['value']).__str__pickle()
-                    elif element[1] == 0:
-                        msg = CDProto.reppull(data['value']).__str__xml()
-                    CDProto.send_msg(element[0], msg, element[1])
-                    print("mandei hehe")
+                if comm=="register":
+                    self.subscribe(data['topic'], conn,ser)
+                    val=self.get_topic(data['topic'])
+                    print(val)
+                    if val!=None:
+                        if(ser==1):
+                            msg= CDProto.reppull(val).__str__json()
+                        elif(ser==2):
+                            msg= CDProto.reppull(val).__str__pickle()
+                        elif(ser==0):
+                            msg= CDProto.reppull(val).__str__xml()
+                        CDProto.send_msg(conn, msg, int(ser))
+                elif comm=="cancel":
+                    self.unsubscribe(data['topic'], conn)
+                elif comm=="lists":
+                    self.list_topics()
+                elif comm=="push":  #é sempre um produtor que vai usar este comando
+                    res = self.list_subscriptions(data['topic'])
+                    self.put_topic(data['topic'], data['value'])
+                    for element in res:
+                        if element[1] == 1:
+                            msg = CDProto.reppull(data['value']).__str__json()
+                            print(data['value']) 
+                        elif element[1] == 2:
+                            msg = CDProto.reppull(data['value']).__str__pickle()
+                        elif element[1] == 0:
+                            msg = CDProto.reppull(data['value']).__str__xml()
+                        
+                        CDProto.send_msg(element[0], msg, element[1])
+                        
             #elif comm=="pull":
             #    msg= CDProto.reppull(self.get_topic(data['topic']))
             #    CDProto.send_msg(conn, msg, data['serializer'])

@@ -67,15 +67,12 @@ class Queue:
         """Waits for (topic, data) from broker.
 
         Should BLOCK the consumer!"""
-        data = self.sock.recv(10000)
-        print("\n~~~~~~~~~~~~~~")
-        if data:
-            things,ser = CDProto.recv_msg(self.sock)
-            value=things['value']
-            return self.topic, value
-        else:
-            pass
-
+        
+        things,ser = CDProto.recv_msg(self.sock)
+        value=things['value']
+        print('value:' + str(value))
+        return self.topic, value
+        
 
         #value=CDProto.recv_msg(self.sock).__str__() #bloqueia
         #while(value==None):

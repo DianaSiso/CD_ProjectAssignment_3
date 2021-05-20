@@ -192,7 +192,7 @@ class CDProto:
             return data,serializer
             
         else:
-            return None
+            return None,None
         
 
 class CDProtoBadFormat(Exception):
