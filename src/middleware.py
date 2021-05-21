@@ -102,6 +102,9 @@ class Queue:
         if(self.queue_type==0):
             mesccl=CDProto.cancel(self.topic).__str__xml()
         CDProto.send_msg(self.sock,mesccl,self.queue_type)
+        self.sel.unregister(self.sock)
+        self.sock.close()
+        exit()
         #self.broker.unsubscribe(self.topic,self.queue) #precisamos de um endereço e serializer
 
 

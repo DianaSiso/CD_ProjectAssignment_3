@@ -8,7 +8,7 @@ import selectors
 class Serializer(enum.Enum):
     """Possible message serializers."""
 
-    JSON = 2
+    JSON = 1
     XML = 0
     PICKLE = 2
 
@@ -109,6 +109,8 @@ class Broker:
                         CDProto.send_msg(conn, msg, int(ser))
                 elif comm=="cancel":
                     self.unsubscribe(data['topic'], conn)
+                    self.sel.unregister(conn)
+                    conn.close()
                 elif comm=="lists":
                     self.list_topics()
                 elif comm=="push":  #é sempre um produtor que vai usar este comando
