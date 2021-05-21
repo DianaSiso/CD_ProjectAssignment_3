@@ -80,25 +80,10 @@ class PushMessage(Message):
         return conv
 
 
-class PullMessage(Message):
-    """Message to register username in the server."""
-    def __init__(self,topic,command="pull"):
-        super().__init__(command)
-        self.topic=topic
-    def _JSONQueue__str__json(self):
-        return json.dumps({'command':self.command,'topic':self.topic})
-    def _PickleQueue__str__pickle(self):
-        return pickle.dumps({'command':self.command,'topic':self.topic})
-    def _XMLQueue__str__xml(self):
-        msg = {'command':self.command,'topic':self.topic}
-        conv = ('<?xml version="1.0"?><data command="%(command)s" topic="%(topic)s"></data>' % msg)
-        return conv
-
-
 class RepMessage(Message):
 
     """Message to register username in the server."""
-    def __init__(self,value,command="reppull"):
+    def __init__(self,value,command="rep"):
         super().__init__(command)
         self.value=value
     def _JSONQueue__str__json(self):
@@ -144,12 +129,7 @@ class CDProto:
         return PushMessage(topic,value)  
 
     @classmethod
-    def pull(cls, topic: str) -> PullMessage:
-        """Creates a RegisterMessage object."""
-        return PullMessage(topic)   
-
-    @classmethod
-    def reppull(cls, value: str) -> RepMessage:
+    def rep(cls, value: str) -> RepMessage:
         """Creates a RegisterMessage object."""
         return RepMessage(value)   
      

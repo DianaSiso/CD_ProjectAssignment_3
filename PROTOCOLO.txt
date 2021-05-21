@@ -1,0 +1,15 @@
+O nosso protocolo tem 7 métodos: register, cancel, lists, push, rep, send_msg e recv_msg.
+O método register(topic) retorna um RegisterMessage com a representação {'command':'register', 'topic':self.topic,'serializer':x}, x sendo o serializer (JSON,Pickle ou XML) usado pela queue
+O método cancel(topic) retorna um CancelMessage com a representação {'command':'cancel', 'topic':self.topic}
+O método lists() retorna um ListMessage com a representação {'command':'list'}
+O método push(topic,value) retorna um PushMessage com a representação {'command':'push','topic':self.topic,'value':self.value}
+O método rep(value) retorna um RepMessage com a representação {'command':'rep','value':self.value}
+O método send_msg(conenction,msg,serializer) lê o tamanho da mensagem msg, codifica-a em bytes se ainda não estiver(em Pickle é automatico com o dumps), codifica tambem o tamanh e o serializer, junta tudo e envia pela connection 
+O método recv_msg(conenction) tenta ler 2 bytes da socket que vão representar o tamanho da mensagem a ler. De seguida lê mais 2 bytes que vão representar o serializer (para depois poder traduzir). Após isso, lemos a mensagem lendo os bytes indicados pelo tamanho. Dependendo do serializer, descodificamos e traduzimos. Após isso, retornamos a mensagem e o serializer. Se não conseguirmos ler ou a mensagem vier vazia, retornamos None,None.
+
+O register é o primeiro método a ser evocado pelo Consummer e o cancel o último.
+O método list é evocado pelo Consummer para pedir a lista de topicos ao broker. 
+O método push é evocado pelo Producer a qualquer momento.
+O método rep é usado pelo broker após um register do Consummer ou após receber um push do Producer.
+ 
+

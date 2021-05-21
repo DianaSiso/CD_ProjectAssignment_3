@@ -2,7 +2,7 @@
 from typing import Dict, List, Any, Tuple
 import socket
 import enum
-from .protocol import CDProto
+from .PubSub import CDProto
 import selectors
 
 class Serializer(enum.Enum):
@@ -28,8 +28,6 @@ class Broker:
         self.sock.bind(('localhost', self._port))
         self.sock.listen(100)
         self.sel.register(self.sock, selectors.EVENT_READ, self.accept) #the socket is ready to read
-
-
 
     def list_topics(self) -> List[str]:
         """Returns a list of strings containing all topics."""
@@ -86,7 +84,6 @@ class Broker:
 
     def accept(self,sock, mask):
         conn, addr = self.sock.accept()  # Should be ready
-        #print('accepted', conn, 'from', addr)
         conn.setblocking(False)
         self.sel.register(conn, selectors.EVENT_READ, self.read)
 
@@ -95,17 +92,16 @@ class Broker:
             data,ser = CDProto.recv_msg(conn)  #the server reads the message sent through the socket
             if(data!=None):
                 comm=data['command']
-
                 if comm=="register":
                     self.subscribe(data['topic'], conn,ser)
                     val=self.get_topic(data['topic'])
                     if val!=None:
                         if(ser==1):
-                            msg= CDProto.reppull(val).__str__json()
+                            msg= CDProto.rep(val).__str__json()
                         elif(ser==2):
-                            msg= CDProto.reppull(val).__str__pickle()
+                            msg= CDProto.rep(val).__str__pickle()
                         elif(ser==0):
-                            msg= CDProto.reppull(val).__str__xml()
+                            msg= CDProto.rep(val).__str__xml()
                         CDProto.send_msg(conn, msg, int(ser))
                 elif comm=="cancel":
                     self.unsubscribe(data['topic'], conn)
@@ -115,36 +111,19 @@ class Broker:
                     self.list_topics()
                 elif comm=="push":  #é sempre um produtor que vai usar este comando
                     res = self.list_subscriptions(data['topic'])
-                   
-                    
                     self.put_topic(data['topic'], data['value'])
                     if res!=None:
                         
                         for element in res:
                             if element[1] == 1:
-                                msg = CDProto.reppull(data['value']).__str__json()
+                                msg = CDProto.rep(data['value']).__str__json()
                                
                             elif element[1] == 2:
-                                msg = CDProto.reppull(data['value']).__str__pickle()
+                                msg = CDProto.rep(data['value']).__str__pickle()
                                
                             elif element[1] == 0:
-                                msg = CDProto.reppull(data['value']).__str__xml()
+                                msg = CDProto.rep(data['value']).__str__xml()
                             
                             CDProto.send_msg(element[0], msg, element[1])
                         
-            #elif comm=="pull":
-            #    msg= CDProto.reppull(self.get_topic(data['topic']))
-            #    CDProto.send_msg(conn, msg, data['serializer'])
-
-
-          
-    
-        #else:
-        #    print('closing', conn)
-        #    logging.debug('---> client unregistered')
-        #    for key in self.clients:
-        #        if conn in self.clients[key]:
-        #            self.clients[key].remove(conn)
-        #    logging.debug(self.clients)
-        #    self.sel.unregister(conn)
-        #    conn.close()
+           

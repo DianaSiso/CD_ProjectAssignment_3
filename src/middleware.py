@@ -4,7 +4,7 @@ from enum import Enum
 from queue import LifoQueue, Empty
 from .broker import Broker
 import socket
-from .protocol import CDProto
+from .PubSub import CDProto
 from typing import Any
 import json
 import selectors
@@ -33,7 +33,6 @@ class Queue:
         
     def accept(self,sock, mask):
         conn, addr = self.sock.accept()  # Should be ready
-        #print('accepted', conn, 'from', addr)
         conn.setblocking(False)
         self.sel.register(conn, selectors.EVENT_READ, self.pull)
 
