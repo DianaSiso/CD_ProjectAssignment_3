@@ -5,6 +5,8 @@ import xml.etree.ElementTree as element_tree
 import xml
 from socket import socket
 import pickle
+from socket import error as SocketError
+import errno
 
 class Message:
     """Message Type."""
@@ -172,27 +174,31 @@ class CDProto:
     @classmethod
     def recv_msg(cls, connection: socket) -> Message:
         """Receives through a connection a Message object."""
-        header=connection.recv(2) #recevemos os 2 primeiros bits
-        head=int.from_bytes(header,byteorder='big') #contem o tamanho da mensagem 
-        if head!=0:
-            ser=connection.recv(2)
-            serializer=int.from_bytes(ser,byteorder='big') # vemos o serializer da mensagem
-            message=connection.recv(head) #recebemos os bits correspondente á mensagem
-            if(serializer==2):
-                datat=message
+        try:
+            header=connection.recv(2) #recevemos os 2 primeiros bits
+            head=int.from_bytes(header,byteorder='big') #contem o tamanho da mensagem 
+            if head!=0:
+                ser=connection.recv(2)
+                serializer=int.from_bytes(ser,byteorder='big') # vemos o serializer da mensagem
+                message=connection.recv(head) #recebemos os bits correspondente á mensagem
+                if(serializer==2):
+                    datat=message
+                else:
+                    datat=message.decode(encoding='UTF-8')#descodificamos a mensagem 
+                if(serializer==1):
+                    data=json.loads(datat) # vira json
+                elif (serializer==2):
+                    data=pickle.loads(datat) # vira pickle
+                else:
+                    decoded_xml = element_tree.fromstring(datat)
+                    data = decoded_xml.attrib
+                return data,serializer
+                
             else:
-                datat=message.decode(encoding='UTF-8')#descodificamos a mensagem 
-            if(serializer==1):
-                data=json.loads(datat) # vira json
-            elif (serializer==2):
-                data=pickle.loads(datat) # vira pickle
-            else:
-                decoded_xml = element_tree.fromstring(datat)
-                data = decoded_xml.attrib
-            return data,serializer
-            
-        else:
+                return None,None
+        except SocketError as e:
             return None,None
+
         
 
 class CDProtoBadFormat(Exception):
